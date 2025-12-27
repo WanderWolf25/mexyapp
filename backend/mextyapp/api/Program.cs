@@ -1,67 +1,43 @@
-using MexyApp.Data; // Importa el namespace donde está AppDbContext
 
+using MexyApp.Api.Domain;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.EntityFrameworkCore.PostgreSQL;
-
-// Guardamos el color original para restaurarlo después
-var colorOriginal = Console.ForegroundColor;
-
-// Cambiamos el color a verde
-Console.ForegroundColor = ConsoleColor.Green;
-
-// Escribimos el texto
-Console.WriteLine("¡Esto es verde!");
-
-// Restauramos el color original
-Console.ForegroundColor = colorOriginal;
-
 
 Console.WriteLine("Iniciando MexyApp");
-// Mensaje en consola para confirmar que la app arranca.
 
 var builder = WebApplication.CreateBuilder(args);
-// Crea el builder: configura servicios y la aplicación.
+
+// DbContext → PostgreSQL (Supabase pooler 6543)
+// Mantén timeouts y reintentos para operación normal (lecturas/escrituras)
+builder.Services.AddDbContext<MexyContext>(opt =>
+    opt.UseNpgsql(
+        builder.Configuration.GetConnectionString("Default"),
+        npgsql =>
+        {
+            npgsql.CommandTimeout(180);
+            npgsql.EnableRetryOnFailure(8, TimeSpan.FromSeconds(8), null);
+            // No configures MigrationsAssembly si no vas a migrar en runtime
+            // npgsql.MigrationsAssembly(typeof(MextyContext).Assembly.GetName().Name);
+        }
+    )
+);
 
 builder.Services.AddControllers();
-// Activa soporte para controladores (API REST).
-
 builder.Services.AddOpenApi();
-// Activa OpenAPI (Swagger) para documentar la API.
-
-builder.Services.AddDbContext<AppDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-// Conecta EF Core a PostgreSQL usando la cadena en appsettings.json.
-// AppDbContext es tu clase que representa la base de datos.
 
 var app = builder.Build();
-// Construye la aplicación con la configuración anterior.
 
 if (app.Environment.IsDevelopment())
-// Si estás en modo desarrollo, activa Swagger.
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
-// Redirige HTTP → HTTPS (seguridad).
-
 app.UseAuthorization();
-// Middleware para autorización (roles, policies).
 
 app.MapControllers();
-// Mapea las rutas de los controladores (ej. /api/users).
 
-// Crea la base y tablas si no existen (modo fácil para MVP).
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-}
-
-app.Run();
-// Inicia la aplicación y escucha peticiones.
-
-app.MapGet("/ping-db", async (AppDbContext db) =>
+// Endpoint de salud de base de datos (opcional)
+app.MapGet("/ping-db", async (MexyContext db) =>
 {
     try
     {
@@ -74,3 +50,9 @@ app.MapGet("/ping-db", async (AppDbContext db) =>
         return Results.Problem(title: "Error de conexión", detail: ex.Message, statusCode: 500);
     }
 });
+
+// Importante: NO migres ni hagas seed aquí si el esquema ya fue aplicado por SQL
+// await app.MigrateAndSeedAsync(...);  // ← ELIMINADO
+// using (var scope = app.Services.CreateScope()) { ... db.Database.MigrateAsync(); } // ← ELIMINADO
+
+app.Run();

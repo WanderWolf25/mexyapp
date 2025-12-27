@@ -128,3 +128,4 @@ F:\developement\mextyapp\backend\mextyapp\obj\Debug\net9.0\refint\mextyapp.dll
 F:\developement\mextyapp\backend\mextyapp\obj\Debug\net9.0\mextyapp.pdb
 F:\developement\mextyapp\backend\mextyapp\obj\Debug\net9.0\mextyapp.genruntimeconfig.cache
 F:\developement\mextyapp\backend\mextyapp\obj\Debug\net9.0\ref\mextyapp.dll
+f:\developement\mextyapp\backend\mextyapp\bin\Debug\net9.0\BCrypt.Net-Next.dll
