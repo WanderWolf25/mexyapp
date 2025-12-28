@@ -1,4 +1,5 @@
 
+// src/api/Endpoints/UsersEndpoints.cs
 using Microsoft.EntityFrameworkCore;
 using MexyApp.Api.Contracts;
 using MexyApp.Api.Domain;
@@ -11,45 +12,49 @@ public static class UsersEndpoints
     {
         var group = routes.MapGroup("/api/users").WithTags("Users");
 
-        // POST /api/users (no necesita Include)
-        
-// En UsersEndpoints.cs (dentro del MapPost)
-group.MapPost("/", async (CreateUserRequest req, MexyContext db) =>
-{
-    if (string.IsNullOrWhiteSpace(req.Username) ||
-        string.IsNullOrWhiteSpace(req.Email) ||
-        string.IsNullOrWhiteSpace(req.Password))
-    {
-        return Results.BadRequest("Username, Email y Password son obligatorios.");
-    }
+        // POST /api/users (validación temprana + unicidad de email)
+        group.MapPost("/", async (CreateUserRequest req, MexyContext db) =>
+        {
+            // Validación de campos obligatorios
+            if (string.IsNullOrWhiteSpace(req.Username) ||
+                string.IsNullOrWhiteSpace(req.Email) ||
+                string.IsNullOrWhiteSpace(req.Password))
+            {
+                return Results.BadRequest("Username, Email y Password son obligatorios.");
+            }
 
-    var email = req.Email.Trim().ToLowerInvariant();
-    if (await db.Users.AnyAsync(u => u.Email == email))
-        return Results.Conflict($"Email '{email}' ya está registrado.");
+            // Normalización de email
+            var email = req.Email.Trim().ToLowerInvariant();
 
-    var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
-    var user = new MexyApp.Models.User(req.Username, email, hash);
+            // Verificación de email duplicado
+            if (await db.Users.AnyAsync(u => u.Email == email))
+                return Results.Conflict($"Email '{email}' ya está registrado.");
 
-    db.Users.Add(user);
-    await db.SaveChangesAsync();
+            // Hash de contraseña y creación de entidad
+            var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+            var user = new MexyApp.Models.User(req.Username, email, hash);
 
-    var dto = new UserResponse(
-        user.Id,
-        user.Username,
-        user.Email,
-        user.Status.ToString(),
-        user.Roles.Select(r => r.ToString()).ToArray()
-    );
+            // Persistencia
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
 
-    return Results.Created($"/api/users/{user.Id}", dto);
-});
+            // DTO de respuesta
+            var dto = new UserResponse(
+                user.Id,
+                user.Username,
+                user.Email,
+                user.Status.ToString(),
+                user.Roles.Select(r => r.ToString()).ToArray()
+            );
 
+            return Results.Created($"/api/users/{user.Id}", dto);
+        });
 
-        // GET /api/users/{id} → aquí va el Include("_userRoles")
+        // GET /api/users/{id} → carga roles desde el backing field
         group.MapGet("/{id:int}", async (int id, MexyContext db) =>
         {
             var user = await db.Users
-                .Include("_userRoles") // carga la colección respaldada por el backing field
+                .Include("_userRoles") // colección respaldada por el backing field
                 .FirstOrDefaultAsync(u => u.Id == id);
 
             if (user is null) return Results.NotFound();
