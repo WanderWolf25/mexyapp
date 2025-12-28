@@ -1,0 +1,537 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.vs/mexyapp/DesignTimeBuild/.dtbcache.v2
+.vs/mexyapp/v17/.suo
+appsettings.json
+documentacion/PlugAndPlay.md
+documentacion/ReglasGlobales.docx
+documentacion/RolesReglas.docx
+documentacion/UsoEFCore.md
+src/api/Contracts/CreateUserRequest.cs
+src/api/Contracts/folderinformation.md
+src/api/Contracts/UserResponse.cs.cs
+src/api/documentacion.md
+src/api/Endpoints/UsersEndpoints.cs
+src/Infrastructure/Entities/User.cs
+src/Infrastructure/Entities/UserRole.cs
+src/Infrastructure/MexyContextDb.cs
+src/Program.cs
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="documentacion/PlugAndPlay.md">
+PlugAndPlay
+
+# Base de Datos
+
+    Si queremos cambiar la base de datos a la que apunta el backend tenemos que modificar el archivo**appsettings.json**. ahi podemos especificar las credenciales tipo de base de datos y la direccion y puerto de esta, en este caso usamos supabase
+</file>
+
+<file path="documentacion/UsoEFCore.md">
+// EF Core (Entity Framework Core) es un ORM de .NET
+
+/* ¿Qué es un ORM?
+
+   Es como un traductor entre tu código y la base de datos.
+
+   Tú trabajas con clases (User, Product, etc.) y EF Core se encarga de:
+
+- Convertir tus consultas LINQ en SQL
+- Insertar, actualizar y borrar datos
+- Mapear filas de la DB a objetos C# y viceversa
+
+   ¿Para qué sirve?
+
+- Evitas escribir SQL manual en cada operación
+- Mapeas tablas ↔ clases
+- Migraciones: actualizas el esquema desde código
+- Funciona con varias DB: SQL Server, PostgreSQL, MySQL, SQLite...
+
+   Conceptos clave:
+
+1) DbContext → Es la “puerta” a la DB, tu sesión de trabajo
+
+   public class AppDbContext : DbContext {
+
+   public DbSet`<User>` Users => Set`<User>`();
+
+   }
+2) DbSet`<T>` → Representa una tabla (ej: db.Users = tabla Users)
+3) LINQ → SQL
+
+   var user = await db.Users.FirstOrDefaultAsync(x => x.Email == email);
+
+   // EF genera: SELECT TOP(1) * FROM Users WHERE Email = ...
+4) Migraciones → Scripts para crear/actualizar tablas desdecódigo
+
+   Diferenciarápida:
+
+   -EFclásico(EF6):viejo,ligadoa.NETFramework
+
+   -EFCore:moderno,multiplataforma,recomendadohoy
+
+   ¿Porqué apareceprivateUser(){}// EF?
+
+   PorqueEFnecesitacrearobjetosUsercuandoleedelaDB.
+
+   Eseconstructorvacíoesla “puerta” paraEF,perolohacemosprivate
+
+   paraquenadiemáspuedacrearUsersvacíosyromperreglas.
+
+   SinousasEFCore,opciones:
+
+   -Dapper(másmanual,rápido)
+
+   -SQLdirectoconADO.NET
+
+   Paraproyectosnuevos,EFCoreaceleramuchoelCRUDymigraciones.
+
+*/
+</file>
+
+<file path="src/api/Contracts/CreateUserRequest.cs">
+namespace MexyApp.Api.Contracts;
+
+public sealed record CreateUserRequest(string Username, string Email, string Password);
+
+//Esto es un modelo de datos, nos sirve para saber que datos necesitamos para crear un usuario
+//De esta manera mantenemos nuestro codigo limpio y organizado
+</file>
+
+<file path="src/api/Contracts/folderinformation.md">
+Los contratos son como definicion de modelos, nos permite saber que datos o variables habra
+en la entrada y salida, esto nos permite tener un codigo mas mantenible y reducir las probabilidades 
+de que algo malo suceda
+</file>
+
+<file path="src/api/Contracts/UserResponse.cs.cs">
+namespace MexyApp.Api.Contracts;
+
+public sealed record UserResponse(
+    int Id,
+    string Username,
+    string Email,
+    string Status,
+    string[] Roles
+);
+//Este es un modelo de datos que utilizamos para devolver la informacion del usuario
+//Despues de que se ha creado o consultado un usuario
+</file>
+
+<file path="src/api/documentacion.md">
+A continuación te dejo una **guía de arquitectura** para la carpeta `Api` en una solución .NET (Minimal APIs o controladores). Es “README‑style” para que la pegues en tu repo.
+
+---
+
+# Carpeta `Api` — responsabilidades y estructura
+
+## Propósito
+
+Alojar **el borde HTTP** de la aplicación: endpoints, contratos (DTOs), validación, autenticación/autorización, documentación OpenAPI, manejo de errores, telemetría y salud. Debe ser  **delgada** : no contiene lógica de negocio ni acceso a datos (eso vive en `Application`/`Infrastructure`).
+
+## Detalle por carpeta
+
+### `Program.cs`
+
+Compone el **pipeline HTTP** y registra servicios:
+
+* `UseAuthentication()`, `UseAuthorization()`; `[Authorize]` sobre endpoints/policies. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/ef/core/modeling/value-conversions)
+* **OpenAPI** (`AddOpenApi`, `MapOpenApi`) y **Swagger UI/Scalar solo en `Development`** (reduce exposición). [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.isession?view=aspnetcore-10.0)
+* **Health checks** (`AddHealthChecks`, `MapHealthChecks("/health")`). [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-10.0)
+* **Logging** (`ILogger` o Serilog) con niveles y no PII. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.ipasswordhasher-1?view=aspnetcore-10.0)
+
+> Minimal APIs usa **route groups** y **WithOpenApi** para describir endpoints. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2279797/persisting-data-through-session)
+
+---
+
+### `Endpoints/` (o `Controllers/`)
+
+Los endpoints  **orquestan** : reciben DTOs, validan, llaman a `Application` y devuelven códigos HTTP apropiados.
+
+* Minimal APIs: agrupa por recurso (`/users`, `/roles`) y documenta con `.WithOpenApi()`. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2279797/persisting-data-through-session)
+* Controladores MVC: `[ApiController]` + `[Authorize]` + atributos de respuesta.
+
+**Ejemplo (Minimal API):**
+
+publicstaticclassUsersEndpoints
+
+{
+
+    publicstaticIEndpointRouteBuilderMapUsers(thisIEndpointRouteBuilderroutes)
+
+    {
+
+    vargroup=routes.MapGroup("/users").WithTags("Users");
+
+    group.MapPost("/",CreateUser).Produces(201).WithOpenApi();
+
+    group.MapGet("/{id:int}",GetUser).Produces(200).Produces(404).WithOpenApi();
+
+    // …
+
+    returnroutes;
+
+    }
+
+}
+
+---
+
+### `Contracts/`
+
+Define **DTOs** de entrada/salida. Añade **DataAnnotations** (o FluentValidation) para reglas básicas; en controladores con `[ApiController]` obtienes **400 automático** si el modelo es inválido. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2114933/how-to-validate-security-stamp-on-next-request)
+
+---
+
+### `Validation/`
+
+Validación adicional (p.ej. FluentValidation) o validación de negocio superficial para rechazar rápido.
+
+> En web APIs, mantener las reglas de formato/tamaño aquí y las reglas de negocio profundas en `Application`. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2114933/how-to-validate-security-stamp-on-next-request)
+
+---
+
+### `Auth/`
+
+* **Policies** (claims/roles) con `AddAuthorization`, `RequireClaim`, `RequireRole`, `RequireAssertion`. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/390717/how-to-combine-one-to-many-relationship-and-many-t)
+* **Roles** : `[Authorize(Roles="Administrador,Soporte")]` donde aplique. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/ef/core/what-is-new/ef-core-5.0/whatsnew)
+* **Tokens/cookies** : configura esquemas en `Program.cs` y usa claims para autorización. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/ef/core/modeling/value-conversions)
+
+---
+
+### `Middleware/`
+
+Cross‑cutting:
+
+* **Global exception handler** → 500 consistente + problema (RFC7807) en JSON.
+* **Request/Response logging** y **Correlation ID** (cabecera `X-Correlation-ID`).
+* **Rate limiting** si procede.
+
+> Logging con `ILogger` o Serilog; evita PII y usa niveles adecuados. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.ipasswordhasher-1?view=aspnetcore-10.0)
+
+---
+
+### `OpenApi/`
+
+Configura la generación de documento y UI (Swagger/Scalar).  **Habilitar UI sólo en `Development`** . Documenta respuestas (`Produces`) y esquemas. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.isession?view=aspnetcore-10.0)
+
+---
+
+### `Health/`
+
+Registra sondas de **liveness** y **readiness** (DB, servicios externos) y expone `/health`. Útil para orquestadores y balanceadores. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-10.0)
+
+---
+
+### `Versioning/` (opcional)
+
+Si tu API tendrá múltiples versiones, organiza route groups por versión (`/v1`, `/v2`) y etiqueta OpenAPI por versión. Guía general de versionado/semver para paquetes/bibliotecas. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/performance/overview?view=aspnetcore-10.0)
+
+---
+
+### `Mapping/` (opcional)
+
+Perfiles de AutoMapper para mapear entidades ↔ DTOs. Mantén el mapeo simple en la capa `Api`.
+
+---
+
+### `appsettings.json` (sin secretos)
+
+Solo **configuración no sensible** (logging, OpenAPI, flags). **No** metas credenciales: usa **variables de entorno** en dev y **Azure Key Vault** en prod; si despliegas en Azure, considera **Managed Identity** para acceso a recursos sin secretos. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/system.security.claims.claimsprincipal?view=net-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/best-practices?view=aspnetcore-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/security/authentication/claims?view=aspnetcore-10.0)
+
+---
+
+## Reglas de diseño de API (resumen)
+
+* **Idempotencia** : `GET/PUT/DELETE` idempotentes; `POST` para crear.
+* **Códigos HTTP y contratos** : usa `Results.*`/`Produces()` con OpenAPI. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2279797/persisting-data-through-session)
+* **Paginación, filtro, orden** para colecciones grandes (evita payloads enormes). [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/1476624/using-serilog-in-asp-net-core-solution-with-multip)
+* **Autorización declarativa** con roles/policies; evita consultas a BD por request para “quién es/qué puede”. Claims en token/cookie + revalidación de security stamp. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/ef/core/modeling/value-conversions), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/390717/how-to-combine-one-to-many-relationship-and-many-t)
+* **Observabilidad** : logs estructurados por request y  **health checks** . [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.identity.ipasswordhasher-1?view=aspnetcore-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-10.0)
+
+---
+
+## Qué **debe llevar** hoy tu carpeta `Api` (según tu repo actual)
+
+* `Program.cs` con:
+  * Registro de `MexyContext` y servicios.
+  * Endpoints `Users`/`Roles` (Minimal APIs) con DTOs y validación.
+  * `AddOpenApi` + `MapOpenApi`  **solo en dev** . [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/performance/caching/memory?view=aspnetcore-10.0)
+  * `AddHealthChecks()` + `MapHealthChecks("/health")`. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/tutorials/min-web-api?view=aspnetcore-10.0)
+  * Logging básico (`AddConsole`).
+* `Endpoints/UsersEndpoints.cs` y `Endpoints/RolesEndpoints.cs` para ordenar rutas. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2279797/persisting-data-through-session)
+* `Contracts/` con `CreateUserDto`, `UserResponse`, `RoleDto`.
+* `Validation/` (si amplías más allá de DataAnnotations). [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/2114933/how-to-validate-security-stamp-on-next-request)
+* `Auth/Policies.cs` si empiezas a proteger endpoints por roles/políticas. [[learn.microsoft.com]](https://learn.microsoft.com/en-us/answers/questions/390717/how-to-combine-one-to-many-relationship-and-many-t)
+* `OpenApi/OpenApiConfig.cs` (opcional) para centralizar la configuración de tags, descriptions y `Produces`.
+* `Health/HealthConfig.cs` (opcional) para chequear DB/externos.
+* `appsettings.json` **sin secretos** (mover credenciales a env/Key Vault). [[learn.microsoft.com]](https://learn.microsoft.com/en-us/dotnet/api/system.security.claims.claimsprincipal?view=net-10.0), [[learn.microsoft.com]](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/best-practices?view=aspnetcore-10.0)
+
+---
+
+## Siguiente paso rápido
+
+Si quieres, preparo un **README.md** listo para tu `src/Api/` con esta estructura, más un ejemplo completo de `UsersEndpoints` (Minimal API + OpenAPI + validación) y el registro de health/logging en `Program.cs`. ¿Lo dejo con DataAnnotations o prefieres FluentValidation?
+</file>
+
+<file path="src/api/Endpoints/UsersEndpoints.cs">
+using Microsoft.EntityFrameworkCore;
+using MexyApp.Api.Contracts;
+using MexyApp.Api.Domain;
+
+namespace MexyApp.Api.Endpoints;
+
+public static class UsersEndpoints
+{
+    public static IEndpointRouteBuilder MapUsersEndpoints(this IEndpointRouteBuilder routes)
+    {
+        var group = routes.MapGroup("/api/users").WithTags("Users");
+
+        // POST /api/users (no necesita Include)
+        group.MapPost("/", async (CreateUserRequest req, MexyContext db) =>
+        {
+            var email = req.Email.Trim().ToLowerInvariant();
+            if (await db.Users.AnyAsync(u => u.Email == email))
+                return Results.Conflict($"Email '{email}' ya está registrado.");
+
+            var hash = BCrypt.Net.BCrypt.HashPassword(req.Password);
+            var user = new MexyApp.Models.User(req.Username, email, hash);
+
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+
+            var dto = new UserResponse(
+                user.Id,
+                user.Username,
+                user.Email,
+                user.Status.ToString(),
+                user.Roles.Select(r => r.ToString()).ToArray()
+            );
+
+            return Results.Created($"/api/users/{user.Id}", dto);
+        });
+
+        // GET /api/users/{id} → aquí va el Include("_userRoles")
+        group.MapGet("/{id:int}", async (int id, MexyContext db) =>
+        {
+            var user = await db.Users
+                .Include("_userRoles") // carga la colección respaldada por el backing field
+                .FirstOrDefaultAsync(u => u.Id == id);
+
+            if (user is null) return Results.NotFound();
+
+            var dto = new UserResponse(
+                user.Id,
+                user.Username,
+                user.Email,
+                user.Status.ToString(),
+                user.Roles.Select(r => r.ToString()).ToArray()
+            );
+
+            return Results.Ok(dto);
+        });
+
+        return routes;
+    }
+}
+</file>
+
+<file path="src/Infrastructure/Entities/User.cs">
+namespace MexyApp.Models;
+
+public enum RoleName { Comprador, Artesano, Soporte, Administrador }
+public enum UserStatus { Activo, Bloqueado }
+
+public class User
+{
+    public int Id { get; private set; }
+
+    public string Username { get; private set; } = default!;
+    public string Email { get; private set; } = default!;
+    public string PasswordHash { get; private set; } = default!;
+
+    public UserStatus Status { get; private set; } = UserStatus.Activo;
+
+    // Backing field: única fuente de verdad para la relación 1..N
+    private readonly List<UserRole> _userRoles = new();
+
+    // Proyección de nombres de rol (solo lectura)
+    public IReadOnlyCollection<RoleName> Roles =>
+        _userRoles.Select(ur => ur.Role).ToArray();
+
+    private User() { } // EF
+
+    public User(string username, string email, string passwordHash)
+    {
+        Username = username.Trim();
+        Email = email.Trim().ToLowerInvariant();
+        PasswordHash = passwordHash;
+
+        // Rol base por defecto
+        _userRoles.Add(new UserRole { Role = RoleName.Comprador });
+    }
+
+    public bool HasRole(RoleName role) => _userRoles.Any(r => r.Role == role);
+
+    public void AddRole(RoleName role)
+    {
+        if (HasRole(role)) return; // Evita duplicados
+        _userRoles.Add(new UserRole { Role = role });
+    }
+
+    public void RemoveRole(RoleName role)
+    {
+        var link = _userRoles.FirstOrDefault(r => r.Role == role);
+        if (link is not null) _userRoles.Remove(link);
+    }
+
+    public void Block() => Status = UserStatus.Bloqueado;
+}
+</file>
+
+<file path="src/Infrastructure/Entities/UserRole.cs">
+namespace MexyApp.Models;
+
+public class UserRole
+{
+    public int UserId { get; set; }
+    public RoleName Role { get; set; }
+    public User? User { get; set; } // navegación opcional
+
+    public UserRole() { } // constructor vacío para EF
+}
+</file>
+
+<file path="src/Infrastructure/MexyContextDb.cs">
+using Microsoft.EntityFrameworkCore;
+using MexyApp.Models;
+
+namespace MexyApp.Api.Domain
+{
+    public sealed class MexyContext : DbContext
+    {
+        public MexyContext(DbContextOptions<MexyContext> options) : base(options) { }
+
+        public DbSet<User> Users => Set<User>();
+        public DbSet<UserRole> UserRoles => Set<UserRole>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.HasDefaultSchema("public"); // explícito para Supabase
+
+            modelBuilder.Entity<User>(b =>
+            {
+                b.ToTable("Users");
+                b.HasKey(u => u.Id);
+
+                b.Property(u => u.Username).HasMaxLength(100).IsRequired();
+                b.Property(u => u.Email).HasMaxLength(256).IsRequired();
+                b.HasIndex(u => u.Email).IsUnique();
+
+                b.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired();
+
+                b.Property(u => u.Status)
+                 .HasConversion<string>()
+                 .HasMaxLength(20)
+                 .IsRequired();
+
+                // Relación 1..N usando backing field "_userRoles" (no hay propiedad de navegación pública)
+                b.HasMany<UserRole>("_userRoles")
+                 .WithOne(ur => ur.User)
+                 .HasForeignKey(ur => ur.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.Navigation("_userRoles")
+                 .UsePropertyAccessMode(PropertyAccessMode.Field);
+            });
+
+            modelBuilder.Entity<UserRole>(b =>
+            {
+                b.ToTable("UserRoles");
+
+                // Unicidad por (UserId, Role)
+                b.HasKey(ur => new { ur.UserId, ur.Role });
+
+                b.Property(ur => ur.Role)
+                 .HasConversion<string>()
+                 .HasMaxLength(50)
+                 .IsRequired();
+            });
+        }
+    }
+}
+</file>
+
+<file path="src/Program.cs">
+using MexyApp.Api.Domain;
+using MexyApp.Models;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDbContext<MexyContext>(opt =>
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+);
+
+var app = builder.Build();
+
+// ÚNICO endpoint: crea usuario con hash BCrypt
+app.MapGet("/crear-usuario", async (string username, string email, string password, MexyContext db) =>
+{
+    var hash = BCrypt.Net.BCrypt.HashPassword(password);
+    var user = new User(username, email, hash);
+    db.Users.Add(user);
+   
+  
+   
+    await db.SaveChangesAsync();
+    return $"Usuario creado con ID: {user.Id}";
+
+});
+
+app.Run();
+</file>
+
+</files>
