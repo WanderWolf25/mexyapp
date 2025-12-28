@@ -17,8 +17,12 @@ app.MapGet("/crear-usuario", async (string username, string email, string passwo
     var hash = BCrypt.Net.BCrypt.HashPassword(password);
     var user = new User(username, email, hash);
     db.Users.Add(user);
+   
+  
+   
     await db.SaveChangesAsync();
     return $"Usuario creado con ID: {user.Id}";
+
 });
 
 app.Run();
